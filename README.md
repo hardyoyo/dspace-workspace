@@ -1,4 +1,4 @@
-# DSpace7Lando
+# DSpace Workspace
 
 An example Lando dev environment for DSpace 7.
 
