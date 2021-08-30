@@ -1,6 +1,6 @@
 # DSpace Workspace
 
-An example Lando dev environment for DSpace 7.
+An example [Lando](https://lando.dev/download/) dev environment for DSpace 7.
 
 ## Description
 
