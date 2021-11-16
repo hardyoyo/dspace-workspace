@@ -56,7 +56,7 @@ services:
     services:
       image: maven:3.6.3-jdk-11
       command: tail -f /dev/null
-    build_as_root: 
+    build_as_root:
       - apt-get update -qq
       - apt-get install -y ant
     overrides:
@@ -65,6 +65,10 @@ services:
         MAVEN_CONFIG: "/app/.m2"
     meUser: root
     scanner: false
+
+events:
+  post-start:
+    - frontend: echo "\n\nREADY FOR ACTION!\n\n*** Don't forget that the DSpace-Angular front-end requires you to run some tooling before it's usable\n*** try this... lando yarn start:dev\n\n"
 
 tooling:
   copy-solr-cores:
