@@ -1,0 +1,50 @@
+---
+name: keycloak
+
+services:
+
+  keycloak:
+    type: compose
+    scanner: false
+    ssl: true
+    sslExpose: true
+    port: 8443
+    app_mount: delegated
+    build_as_root:
+      - microdnf update -y && microdnf install -y findutils util-linux-user lsof vim && useradd www-data
+    services:
+      user: root
+      image: jboss/keycloak:16.1.0
+      command: /app/docker-entrypoint.sh
+      environment:
+        # BIND_OPTS: '0.0.0.0'
+        KEYCLOAK_USER: admin
+        KEYCLOAK_PASSWORD: password
+        KEYCLOAK_IMPORT: /app/realm.json
+        PROXY_ADDRESS_FORWARDING: 'true'
+        LANDO_DROP_USER: root
+        LAUNCH_JBOSS_IN_BACKGROUND: 0
+      ports:
+        - 8080
+        - 8443
+proxy:
+  keycloak:
+    - keycloak.local.sandbox:8080
+    - keycloak.local.sandbox:8443
+
+tooling:
+  kcadmin:
+    service: keycloak
+    user: root
+    cmd: /opt/jboss/keycloak/bin/kcadmin
+    dir: /opt/jboss/keycloak
+  add-user:
+    service: keycloak
+    user: root
+    cmd: /opt/jboss/keycloak/bin/add-user-keycloak.sh
+    dir: /opt/jboss/keycloak
+  reload:
+    service: keycloak
+    user: root
+    cmd: /opt/jboss/keycloak/bin/jboss-cli.sh --connect command=:reload
+    dir: /opt/jboss/keycloak
