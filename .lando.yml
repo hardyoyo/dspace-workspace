@@ -4,16 +4,16 @@ proxy:
     - dspace-api.local.sandbox
   frontend:
     - dspace.local.sandbox:4000
-  keycloak:
-    - keycloak.local.sandbox:8080
-    - keycloak.local.sandbox:8443
+  # keycloak:
+  #   - keycloak.local.sandbox:8080
+  #   - keycloak.local.sandbox:8443
 services:
   # might need to change this to type: 'tomcat:custom', overrides: image 'tomcat:10' if I need a newer version of Tomcat or the JDK
   apiserver:
     config: {}
     type: 'tomcat:9'
     build_as_root:
-     - apt-get update -qq  && apt-get -y install psmisc
+     - apt update -y && apt -qqy install psmisc
     webroot: dspace_home
     ssl: true
     sslExpose: true
@@ -23,8 +23,8 @@ services:
     type: 'node:14'
     build_as_root:
       - wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
-      - echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list
-      - apt-get update -qq  && apt-get -y install default-jre google-chrome-stable
+      - if [ ! -f "/etc/apt/sources.list.d/google-chrome.list" ]; then echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list; fi
+      - apt update -y && apt -y install default-jre google-chrome-stable
       - wget https://raw.githubusercontent.com/SeleniumHQ/docker-selenium/trunk/NodeChrome/wrap_chrome_binary && mkdir -p /opt/bin && cp /app/wrap_chrome_binary /opt/bin/wrap_chrome_binary && chmod 755 /opt/bin/wrap_chrome_binary && /opt/bin/wrap_chrome_binary
     build:
       - yarn install --no-lockfile
@@ -48,29 +48,29 @@ services:
         DSPACE_REST_NAMESPACE: "server" # The namespace of the REST-API application
         DSPACE_REST_SSL: "false" # Whether the REST-API application uses SSL [true/false]
 
-  keycloak:
-    type: compose
-    scanner: false
-    ssl: true
-    sslExpose: true
-    port: 8443
-    app_mount: delegated
-    build_as_root:
-      - microdnf update -y && microdnf install -y findutils util-linux-user lsof vim && useradd www-data
-    services:
-      user: root
-      image: jboss/keycloak:16.1.0
-      command: /app/keycloak/docker-entrypoint.sh
-      environment:
-        KEYCLOAK_USER: admin
-        KEYCLOAK_PASSWORD: password
-        KEYCLOAK_IMPORT: /app/keycloak/realm.json
-        PROXY_ADDRESS_FORWARDING: 'true'
-        LANDO_DROP_USER: root
-        LAUNCH_JBOSS_IN_BACKGROUND: 0
-      ports:
-        - 8080
-        - 8443
+  # keycloak:
+  #   type: compose
+  #   scanner: false
+  #   ssl: true
+  #   sslExpose: true
+  #   port: 8443
+  #   app_mount: delegated
+  #   build_as_root:
+  #     - microdnf update -y && microdnf install -y findutils util-linux-user lsof vim && useradd www-data
+  #   services:
+  #     user: root
+  #     image: jboss/keycloak:16.1.0
+  #     command: /app/keycloak/docker-entrypoint.sh
+  #     environment:
+  #       KEYCLOAK_USER: admin
+  #       KEYCLOAK_PASSWORD: password
+  #       KEYCLOAK_IMPORT: /app/keycloak/realm.json
+  #       PROXY_ADDRESS_FORWARDING: 'true'
+  #       LANDO_DROP_USER: root
+  #       LAUNCH_JBOSS_IN_BACKGROUND: 0
+  #     ports:
+  #       - 8080
+  #       - 8443
 
   solr:
     type: 'solr:8.6'
@@ -89,16 +89,15 @@ services:
     type: compose
     app_mount: delegated
     services:
-      image: maven:3.6.3-jdk-11
+      image: maven:3.8.4-openjdk-11
       command: tail -f /dev/null
-    build_as_root:
-      - apt update -qq
-      - apt install -y ant
+    run_as_root:
+      - apt update -y && apt install -y ant pv
     overrides:
       environment:
         M2_HOME: "/app/.m2"
         MAVEN_CONFIG: "/app/.m2"
-    # meUser: root
+    meUser: www-data
     scanner: false
 
 events:
@@ -123,6 +122,7 @@ tooling:
     service: java
     cmd: mvn
     dir: /app/dspace
+    user: www-data
     description: Runs Maven commands on the DSpace apiserver
   api-unit-tests:
     service: java
@@ -147,6 +147,7 @@ tooling:
   ant:
     service: java
     cmd: ant
+    user: www-data
     dir: /app/dspace/dspace/target/dspace-installer
     description: Runs Ant commands on the DSpace apiserver
   dspace:
@@ -203,18 +204,23 @@ tooling:
       - yarn run config:dev
       - ts-node --project ./tsconfig.ts-node.json scripts/test-rest.ts
     dir: /app/dspace-angular
-  kcadmin:
-    service: keycloak
+  # kcadmin:
+  #   service: keycloak
+  #   user: root
+  #   cmd: /opt/jboss/keycloak/bin/kcadmin
+  #   dir: /opt/jboss/keycloak
+  # add-user:
+  #   service: keycloak
+  #   user: root
+  #   cmd: /opt/jboss/keycloak/bin/add-user-keycloak.sh
+  #   dir: /opt/jboss/keycloak
+  # reload:
+  #   service: keycloak
+  #   user: root
+  #   cmd: /opt/jboss/keycloak/bin/jboss-cli.sh --connect command=:reload
+  #   dir: /opt/jboss/keycloak
+  unbork-permissions:
+    service: java
     user: root
-    cmd: /opt/jboss/keycloak/bin/kcadmin
-    dir: /opt/jboss/keycloak
-  add-user:
-    service: keycloak
-    user: root
-    cmd: /opt/jboss/keycloak/bin/add-user-keycloak.sh
-    dir: /opt/jboss/keycloak
-  reload:
-    service: keycloak
-    user: root
-    cmd: /opt/jboss/keycloak/bin/jboss-cli.sh --connect command=:reload
-    dir: /opt/jboss/keycloak
+    cmd:
+    - find /app/dspace \! -user www-data -print0 | pv -e -p | xargs -0 -I {} chown www-data:www-data {}
