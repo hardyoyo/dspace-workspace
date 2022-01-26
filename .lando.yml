@@ -83,21 +83,21 @@ services:
       user: postgres
       password: 
       database: dspace
-    run_as_root:
+    build_as_root:
       - psql -U postgres dspace -c '\x' -c 'create extension pgcrypto;'
   java:
     type: compose
     app_mount: delegated
     services:
+      user: root
       image: maven:3.8.4-openjdk-11
       command: tail -f /dev/null
-    run_as_root:
+    build_as_root:
       - apt update -y && apt install -y ant pv
     overrides:
       environment:
         M2_HOME: "/app/.m2"
         MAVEN_CONFIG: "/app/.m2"
-    meUser: www-data
     scanner: false
 
 events:
@@ -121,8 +121,8 @@ tooling:
   mvn:
     service: java
     cmd: mvn
-    dir: /app/dspace
     user: www-data
+    dir: /app/dspace
     description: Runs Maven commands on the DSpace apiserver
   api-unit-tests:
     service: java
@@ -224,3 +224,9 @@ tooling:
     user: root
     cmd:
     - find /app/dspace \! -user www-data -print0 | pv -e -p | xargs -0 -I {} chown www-data:www-data {}
+  test-whoami:
+    service: java
+    dir: /app/dspace
+    user: www-data
+    cmd:
+      - whoami

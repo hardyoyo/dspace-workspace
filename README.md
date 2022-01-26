@@ -37,18 +37,36 @@ DSpace-specific tooling for this project includes:
 
 ## Initial setup steps
 1. ensure you have cloned both dspace and dspace-angular to this project folder
-2. `lando rebuild -y`
-3. `lando mvn clean package`
-4. `lando ant fresh_install`
-5. `lando copy-solr-cores`
-6. `lando restart`
-7. `lando dspace database migrate` (shouldn't be necessary, but is)
-8. `lando dspace create-administrator`
-9. pause to admire your dev APIserver running at: (`lando info` will tell you)
-10. `lando yarn install`
-11. `lando yarn start`
-12. play with your new DSpace-Angular frontend, pointed at your dev APIserver
+2. **configure your local.cfg file** (see below)
+3. `lando rebuild -y`
+4. `lando mvn clean package`
+5. `lando ant fresh_install`
+6. `lando copy-solr-cores`
+7. `lando restart`
+8. `lando dspace database migrate` (shouldn't be necessary, but is)
+9. `lando dspace create-administrator`
+10. pause to admire your dev APIserver running at: (`lando info` will tell you)
+11. `lando yarn install`
+12. `lando yarn start`
+13. play with your new DSpace-Angular frontend, pointed at your dev APIserver
 
+## local.cfg file
+You should start with the example local.cfg.EXMAPLE file that comes with DSpace, and then ensure the following values are set correctly:
+```
+dspace.dir=/app/dspace_home
+dspace.server.url = http://dspace-api.local.sandbox/server # requires Lando proxy
+dspace.ui.url = http://dspace.local.sandbox # requires Lando proxy
+dspace.name = LANDO DSpace
+db.url = jdbc:postgresql://database:5432/dspace
+db.username = postgres
+db.password = 
+```
+
+This file is super important to keeping this whole dev environment working. If 
+your dev environment suddenly stops working correctly, first check to be sure 
+this file is present. It's in the `.gitignore` file for dspace, so... git won't
+keep track of it for you. So... from time to time it might go missing, depending
+on whatever else you might be working on. 
 ## Tomcat Configuration
 All the tomcat configs are in the `tomcat_config` folder. Edits to them 
 require a `lando restart-tomcat` or a `lando restart` for Tomcat to pick 

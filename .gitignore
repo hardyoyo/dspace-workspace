@@ -7,4 +7,4 @@ dspace-angular
 dspace_home
 node_modules
 .metadata
-
+.m2/repository
