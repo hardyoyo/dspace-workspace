@@ -50,6 +50,15 @@ DSpace-specific tooling for this project includes:
 12. `lando yarn start`
 13. play with your new DSpace-Angular frontend, pointed at your dev APIserver
 
+NOTE: As you work with this dev environment, you may need to rebuild it. The contents of the `dist` folder
+will remain as-is, and may contain incorrect configuration files. The best way to ensure this doesn't happen
+is, immediately after you run `lando yarn install` run `lando yarn run clean:dist`. This will clean up the
+dist folder for you. You can also run `lando yarn run clean` if you wish to really clean everything out, just
+know the full clean process also deletes everything that `lando yarn install` installed, so you'll need to
+run `lando yarn install` again after running `lando yarn run clean`. ALSO, you won't be able to run any of
+the yarn scripts if you haven't run `lando yarn install` ... so don't try to clean *before* you install,
+because that won't work at all.
+
 ## local.cfg file
 You should start with the example local.cfg.EXMAPLE file that comes with DSpace, and then ensure the following values are set correctly:
 ```

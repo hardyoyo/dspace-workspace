@@ -1,7 +1,7 @@
 name: dspace
 proxy:
   apiserver:
-    - dspace-api.local.sandbox
+    - dspaceapi.local.sandbox
   frontend:
     - dspace.local.sandbox:4000
   # keycloak:
@@ -13,15 +13,16 @@ services:
     config: {}
     type: 'tomcat:9'
     build_as_root:
-     - apt update -y && apt -qqy install psmisc
+     - apt update -y && apt -qqy install gnupg psmisc
     webroot: dspace_home
     ssl: true
     sslExpose: true
     scanner: false
   frontend:
     config: {}
-    type: 'node:14'
+    type: 'node:16'
     build_as_root:
+      - apt update -y && apt -qqy install gnupg psmisc
       - wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
       - if [ ! -f "/etc/apt/sources.list.d/google-chrome.list" ]; then echo "deb http://dl.google.com/linux/chrome/deb/ stable main" >> /etc/apt/sources.list.d/google-chrome.list; fi
       - apt update -y && apt -y install default-jre google-chrome-stable
@@ -35,7 +36,7 @@ services:
     sslExpose: true
     scanner: false
     overrides:
-      image: 'cypress/browsers:node14.7.0-chrome84'
+      image: 'cypress/browsers:node16.14.0-chrome99-ff97'
       ports:
         - '4000:4000'
       environment:
@@ -43,10 +44,10 @@ services:
         DSPACE_PORT: "4000" # The port number of the angular application
         DSPACE_NAMESPACE: "/" # The namespace of the angular application
         DSPACE_SSL: "false" # Whether the angular application uses SSL [true/false]
-        DSPACE_REST_HOST: "dspace-api.local.sandbox" # The host name of the angular application
-        DSPACE_REST_PORT: "80" # The port number of the REST-API application
+        DSPACE_REST_HOST: "dspaceapi.local.sandbox" # The host name of the angular application
+        DSPACE_REST_PORT: "443" # The port number of the REST-API application
         DSPACE_REST_NAMESPACE: "server" # The namespace of the REST-API application
-        DSPACE_REST_SSL: "false" # Whether the REST-API application uses SSL [true/false]
+        DSPACE_REST_SSL: "true" # Whether the REST-API application uses SSL [true/false]
 
   # keycloak:
   #   type: compose
@@ -90,7 +91,7 @@ services:
     app_mount: delegated
     services:
       user: root
-      image: maven:3.8.4-openjdk-11
+      image: maven:3.8.5-openjdk-11
       command: tail -f /dev/null
     build_as_root:
       - apt update -y && apt install -y ant pv
@@ -103,6 +104,9 @@ services:
 events:
   post-start:
     - frontend: echo "\n\nREADY FOR ACTION!\n\n*** Don't forget that the DSpace-Angular front-end requires you to run some tooling before it's usable\n*** try this... lando yarn start:dev\nOH, AND IF YOU'VE JUST REBUILT, CHECK THE README, YOU HAVE LOTS LEFT TO DO.\nAt a minimum, run this... lando yarn install\n\n"
+  pre-destroy:
+    - frontend: echo "\n\nCleaning out the dspace-angular/dist folder\n\n" && rm -Rf /app/dspace-angular/dist/*
+    - apiserver: echo "\n\nCleaning out all of dspace_home\n\n"  && rm -Rf /app/dspace_home/*
 
 tooling:
   copy-solr-cores:
