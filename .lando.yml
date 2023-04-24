@@ -13,11 +13,22 @@ services:
     config: {}
     type: 'tomcat:9'
     build_as_root:
-     - apt update -y && apt -qqy install gnupg psmisc
+     - apt update -y && apt -qqy install gnupg psmisc host
+    cmd:
+      - catalina.sh jdpa start
     webroot: dspace_home
     ssl: true
     sslExpose: true
     scanner: false
+    overrides:
+      image: 'tomcat:9-jdk17'
+      ports:
+        - '8000:8000'
+      environment:
+        JPDA_ADDRESS: "8000"
+        JPDA_TRANSPORT: "dt_socket"
+        CATALINA_OPTS: "-Dlando.http=80 -Dlando.https=443 -Dlando.webroot=/app/dspace_home -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:8000"
+
   frontend:
     config: {}
     type: 'node:16'
@@ -78,7 +89,7 @@ services:
     portforward: false
   database:
     config: {}
-    type: postgres
+    type: 'postgres:11'
     portforward: true
     creds:
       user: postgres
@@ -91,7 +102,7 @@ services:
     app_mount: delegated
     services:
       user: root
-      image: maven:3.8.5-openjdk-11
+      image: maven:3-eclipse-temurin-17-focal
       command: tail -f /dev/null
     build_as_root:
       - apt update -y && apt install -y ant pv
@@ -103,7 +114,7 @@ services:
 
 events:
   post-start:
-    - frontend: echo "\n\nREADY FOR ACTION!\n\n*** Don't forget that the DSpace-Angular front-end requires you to run some tooling before it's usable\n*** try this... lando yarn start:dev\nOH, AND IF YOU'VE JUST REBUILT, CHECK THE README, YOU HAVE LOTS LEFT TO DO.\nAt a minimum, run this... lando yarn install\n\n"
+    - frontend: echo "\n\nREADY FOR ACTION!\n\n*** Don't forget that the DSpace-Angular front-end requires you to run some tooling before it's usable\n*** try this... lando yarn run clean:dist && lando yarn start:dev\nOH, AND IF YOU'VE JUST REBUILT, CHECK THE README, YOU HAVE LOTS LEFT TO DO.\nAt a minimum, run this... lando yarn install\n\n"
   pre-destroy:
     - frontend: echo "\n\nCleaning out the dspace-angular/dist folder\n\n" && rm -Rf /app/dspace-angular/dist/*
     - apiserver: echo "\n\nCleaning out all of dspace_home\n\n"  && rm -Rf /app/dspace_home/*
@@ -234,3 +245,7 @@ tooling:
     user: www-data
     cmd:
       - whoami
+  start-handle-server:
+    service: java
+    cmd: bin/start-handle-server
+    dir: /app/dspace_home
